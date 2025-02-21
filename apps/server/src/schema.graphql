@@ -1,0 +1,38 @@
+type User {
+  id: ID!
+  username: String!
+  email: String!
+  watchlist: [String!]!
+}
+
+type Session {
+  id: ID!
+  web3Address: String!
+  user: User
+  createdAt: String!
+}
+
+type Query {
+  users: [User!]!
+  user(id: ID!): User
+  sessions: [Session!]!
+}
+
+input CreateUserInput {
+  username: String!
+  email: String!
+  watchlist: [String!]
+}
+
+input UpdateUserInput {
+  id: ID!
+  username: String
+  email: String
+  watchlist: [String!]
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(input: UpdateUserInput!): User!
+  deleteUser(id: ID!): Boolean!
+}

@@ -1,0 +1,7 @@
+{
+  "name": "kinetic-xyz-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "pnpm recursive run build"
+  }
+}

@@ -1,0 +1,9 @@
+# Use the official lightweight Postgres image on Alpine Linux
+FROM postgres:16-alpine
+
+# Set environment variables for database configuration inside the container
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=postgres
+ENV POSTGRES_DB=kinetic-db
+
+EXPOSE 5432
