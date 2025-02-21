@@ -11,17 +11,20 @@
     "test": "NODE_OPTIONS=--experimental-vm-modules ./node_modules/.bin/dotenv -e .env -- jest --detectOpenHandles"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/session": "^11.1.0",
     "@fastify/websocket": "^11.0.2",
     "@grpc/grpc-js": "^1.12.6",
     "@grpc/proto-loader": "^0.7.13",
     "@kinetic/db": "workspace:*",
-    "ethers": "^6.13.5",
     "fastify": "^5.2.1",
     "fastify-plugin": "^5.0.1",
     "graphql": "^16.10.0",
     "grpc-tools": "^1.13.0",
     "jest": "29.7.0",
-    "mercurius": "^16.0.1"
+    "mercurius": "^16.0.1",
+    "viem": "^2.23.4",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@babel/core": "^7.26.9",

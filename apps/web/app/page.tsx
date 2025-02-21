@@ -4,12 +4,15 @@ import CoinTable from '@/components/CoinTable';
 import Navbar from '@/components/Navbar';
 import Watchlist from '@/components/WatchList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
 
 export default function Home() {
-  // const [activeTab, setActiveTab] = useState('market');
+  const [queryClient] = useState(() => new QueryClient())
 
   return (
+    <QueryClientProvider client={queryClient}>
+
     <main className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 font-[family-name:var(--font-geist-sans)]">
       <Navbar />
       
@@ -51,5 +54,6 @@ export default function Home() {
         </div>
       </div>
     </main>
+    </QueryClientProvider>
   );
 }

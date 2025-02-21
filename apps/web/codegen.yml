@@ -1,0 +1,11 @@
+schema: "http://localhost:3001/graphql"  # Update this URL as needed
+documents: "lib/graphql/**/*.graphql"     # Your GraphQL queries/mutations location
+ignoreNoDocuments: true
+generates:
+  lib/generated/graphql.tsx:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-query"
+    config:
+      fetcher: "fetch"   # or "graphql-request" if preferred

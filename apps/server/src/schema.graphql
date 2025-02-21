@@ -1,32 +1,30 @@
+# schema.graphql
+
 type User {
   id: ID!
   username: String!
   email: String!
-  watchlist: [String!]!
-  sessions: [Session!]!
-
-  createdAt: String!
-  updatedAt: String!
-}
-
-type Session {
-  id: ID!
   web3Address: String!
-  user: User
-  
   createdAt: String!
   updatedAt: String!
 }
 
-input UpdateUserInput {
-  id: ID!
-  username: String
+type Query {
+  users: [User!]!
+}
+
+input LoginInput {
   email: String
-  watchlist: [String!]
+  address: String!
+  message: String!
+  signature: String!
+}
+
+type LoginResponse {
+  success: Boolean!
+  token: String
 }
 
 type Mutation {
-  createUser(input: CreateUserInput!): User!
-  updateUser(input: UpdateUserInput!): User!
-  deleteUser(id: ID!): Boolean!
+  login(input: LoginInput!): LoginResponse!
 }

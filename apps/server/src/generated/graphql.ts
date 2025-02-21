@@ -16,67 +16,42 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
-export type CreateUserInput = {
-  email: Scalars['String']['input'];
-  username: Scalars['String']['input'];
-  watchlist?: InputMaybe<Array<Scalars['String']['input']>>;
+export type LoginInput = {
+  address: Scalars['String']['input'];
+  email?: InputMaybe<Scalars['String']['input']>;
+  message: Scalars['String']['input'];
+  signature: Scalars['String']['input'];
+};
+
+export type LoginResponse = {
+  __typename?: 'LoginResponse';
+  success: Scalars['Boolean']['output'];
+  token?: Maybe<Scalars['String']['output']>;
 };
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createUser: User;
-  deleteUser: Scalars['Boolean']['output'];
-  updateUser: User;
+  login: LoginResponse;
 };
 
 
-export type MutationCreateUserArgs = {
-  input: CreateUserInput;
-};
-
-
-export type MutationDeleteUserArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type MutationUpdateUserArgs = {
-  input: UpdateUserInput;
+export type MutationLoginArgs = {
+  input: LoginInput;
 };
 
 export type Query = {
   __typename?: 'Query';
-  sessions: Array<Session>;
-  user?: Maybe<User>;
   users: Array<User>;
-};
-
-
-export type QueryUserArgs = {
-  id: Scalars['ID']['input'];
-};
-
-export type Session = {
-  __typename?: 'Session';
-  createdAt: Scalars['String']['output'];
-  id: Scalars['ID']['output'];
-  user?: Maybe<User>;
-  web3Address: Scalars['String']['output'];
-};
-
-export type UpdateUserInput = {
-  email?: InputMaybe<Scalars['String']['input']>;
-  id: Scalars['ID']['input'];
-  username?: InputMaybe<Scalars['String']['input']>;
-  watchlist?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type User = {
   __typename?: 'User';
+  createdAt: Scalars['String']['output'];
   email: Scalars['String']['output'];
   id: Scalars['ID']['output'];
+  updatedAt: Scalars['String']['output'];
   username: Scalars['String']['output'];
-  watchlist: Array<Scalars['String']['output']>;
+  web3Address: Scalars['String']['output'];
 };
 
 
@@ -151,61 +126,55 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
-  CreateUserInput: CreateUserInput;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
+  LoginInput: LoginInput;
+  LoginResponse: ResolverTypeWrapper<LoginResponse>;
   Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
-  Session: ResolverTypeWrapper<Session>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
-  UpdateUserInput: UpdateUserInput;
   User: ResolverTypeWrapper<User>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
   Boolean: Scalars['Boolean']['output'];
-  CreateUserInput: CreateUserInput;
   ID: Scalars['ID']['output'];
+  LoginInput: LoginInput;
+  LoginResponse: LoginResponse;
   Mutation: {};
   Query: {};
-  Session: Session;
   String: Scalars['String']['output'];
-  UpdateUserInput: UpdateUserInput;
   User: User;
 };
 
+export type LoginResponseResolvers<ContextType = any, ParentType extends ResolversParentTypes['LoginResponse'] = ResolversParentTypes['LoginResponse']> = {
+  success?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  token?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type MutationResolvers<ContextType = any, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
-  createUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationCreateUserArgs, 'input'>>;
-  deleteUser?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType, RequireFields<MutationDeleteUserArgs, 'id'>>;
-  updateUser?: Resolver<ResolversTypes['User'], ParentType, ContextType, RequireFields<MutationUpdateUserArgs, 'input'>>;
+  login?: Resolver<ResolversTypes['LoginResponse'], ParentType, ContextType, RequireFields<MutationLoginArgs, 'input'>>;
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
-  sessions?: Resolver<Array<ResolversTypes['Session']>, ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType, RequireFields<QueryUserArgs, 'id'>>;
   users?: Resolver<Array<ResolversTypes['User']>, ParentType, ContextType>;
 };
 
-export type SessionResolvers<ContextType = any, ParentType extends ResolversParentTypes['Session'] = ResolversParentTypes['Session']> = {
+export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {
   createdAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  user?: Resolver<Maybe<ResolversTypes['User']>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  username?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   web3Address?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type UserResolvers<ContextType = any, ParentType extends ResolversParentTypes['User'] = ResolversParentTypes['User']> = {
-  email?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  username?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  watchlist?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
 export type Resolvers<ContextType = any> = {
+  LoginResponse?: LoginResponseResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
-  Session?: SessionResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
 };
 

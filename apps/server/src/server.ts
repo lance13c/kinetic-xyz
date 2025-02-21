@@ -1,13 +1,32 @@
+import fastifyCookie from '@fastify/cookie';
+import fastifySession from '@fastify/session';
 import { AppDataSource, User } from '@kinetic/db';
-import { ethers } from 'ethers';
 import Fastify, { FastifyInstance } from 'fastify';
 import { readFileSync } from 'fs';
 import mercurius from 'mercurius';
 import { join } from 'path';
 import 'reflect-metadata';
+import { verifyMessage } from 'viem';
+import { z } from 'zod';
 
-// Create and configure the Fastify server instance
+// Zod schema to validate and transform login input
+const loginInputSchema = z.object({
+  email: z.string().optional(),
+  address: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address")
+    .transform(val => val as `0x${string}`),
+  message: z.string(),
+  signature: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]+$/, "Invalid signature format")
+    .transform(val => val as `0x${string}`),
+});
+
 export async function createServer(): Promise<FastifyInstance> {
+  const FASTIFY_SECRET = process.env.FASTIFY_SECRET;
+  if (!FASTIFY_SECRET) throw new Error("Missing FASTIFY_SECRET environment variable");
+
   const app = Fastify({ logger: true });
 
   let datasource;
@@ -20,6 +39,13 @@ export async function createServer(): Promise<FastifyInstance> {
     process.exit(1);
   }
 
+  // Register cookie and session plugins BEFORE Mercurius
+  app.register(fastifyCookie);
+  app.register(fastifySession, {
+    secret: FASTIFY_SECRET,
+    cookie: { secure: process.env.NODE_ENV === 'production' },
+  });
+
   // Register an onClose hook to properly destroy the datasource when the server shuts down
   app.addHook('onClose', async () => {
     if (datasource?.isInitialized) {
@@ -28,8 +54,10 @@ export async function createServer(): Promise<FastifyInstance> {
     }
   });
 
+  // Register Mercurius (GraphQL) with an explicit context function so that session is available.
   app.register(mercurius, {
     schema: readFileSync(join(__dirname, 'schema.graphql'), 'utf8'),
+    context: (request, reply) => ({ request, reply }),
     resolvers: {
       Query: {
         // Return a list of users from the database
@@ -45,30 +73,37 @@ export async function createServer(): Promise<FastifyInstance> {
           context: any
         ): Promise<{ success: boolean; token?: string }> => {
           try {
-            // Verify the signed message using ethers.js
-            const recoveredAddress = ethers.verifyMessage(input.message, input.signature);
-            if (recoveredAddress.toLowerCase() !== input.address.toLowerCase()) {
-              throw new Error("Signature verification failed");
+            // Validate and transform input using Zod
+            const parsedInput = loginInputSchema.parse(input);
+
+            const isVerified = await verifyMessage({
+              address: parsedInput.address,
+              message: parsedInput.message,
+              signature: parsedInput.signature,
+            });
+
+            if (!isVerified) {
+              console.error("Signature verification failed");
+              // return 400 Bad Request if signature verification fails
+              return { success: false };
             }
 
             const userRepository = datasource.getRepository(User);
             // Find or create the user record based on the web3Address field
-            let user = await userRepository.findOne({ where: { web3Address: input.address } });
+            let user = await userRepository.findOne({ where: { web3Address: parsedInput.address } });
             if (!user) {
               // Automatically create a new user record if none exists.
               user = userRepository.create({
-                web3Address: input.address,
-                username: `user_${input.address.substring(0, 6)}`,
+                web3Address: parsedInput.address,
                 email: '',
               });
               user = await userRepository.save(user);
             }
 
-            // Store user info in the session (using Fastify session)
+            // Store user info in the session (context.request.session is now available)
             context.request.session.user = {
               id: user.id,
               web3Address: user.web3Address,
-              username: user.username,
             };
             await context.request.session.save();
 
@@ -77,8 +112,6 @@ export async function createServer(): Promise<FastifyInstance> {
             throw new Error("Login failed: " + err.message);
           }
         },
-
-
       },
     },
     graphiql: true,
