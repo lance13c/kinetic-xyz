@@ -15,6 +15,7 @@
     "@grpc/grpc-js": "^1.12.6",
     "@grpc/proto-loader": "^0.7.13",
     "@kinetic/db": "workspace:*",
+    "ethers": "^6.13.5",
     "fastify": "^5.2.1",
     "fastify-plugin": "^5.0.1",
     "graphql": "^16.10.0",

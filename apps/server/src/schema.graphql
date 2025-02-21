@@ -3,25 +3,19 @@ type User {
   username: String!
   email: String!
   watchlist: [String!]!
+  sessions: [Session!]!
+
+  createdAt: String!
+  updatedAt: String!
 }
 
 type Session {
   id: ID!
   web3Address: String!
   user: User
+  
   createdAt: String!
-}
-
-type Query {
-  users: [User!]!
-  user(id: ID!): User
-  sessions: [Session!]!
-}
-
-input CreateUserInput {
-  username: String!
-  email: String!
-  watchlist: [String!]
+  updatedAt: String!
 }
 
 input UpdateUserInput {

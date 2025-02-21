@@ -1,4 +1,5 @@
 import { AppDataSource, User } from '@kinetic/db';
+import { ethers } from 'ethers';
 import Fastify, { FastifyInstance } from 'fastify';
 import { readFileSync } from 'fs';
 import mercurius from 'mercurius';
@@ -8,7 +9,7 @@ import 'reflect-metadata';
 // Create and configure the Fastify server instance
 export async function createServer(): Promise<FastifyInstance> {
   const app = Fastify({ logger: true });
-  
+
   let datasource;
   try {
     // Initialize the database connection
@@ -27,7 +28,6 @@ export async function createServer(): Promise<FastifyInstance> {
     }
   });
 
-  // Register the GraphQL plugin with resolvers and enable GraphiQL
   app.register(mercurius, {
     schema: readFileSync(join(__dirname, 'schema.graphql'), 'utf8'),
     resolvers: {
@@ -39,14 +39,46 @@ export async function createServer(): Promise<FastifyInstance> {
         },
       },
       Mutation: {
-        // Create a new user with the provided email
-        createUser: async (_: any, { input }: { input: { email: string, username: string } }): Promise<User> => {
-          const userRepository = datasource.getRepository(User);
-          const newUser = userRepository.create({  
-            username: input.username,
-          email: input.email, });
-          return userRepository.save(newUser);
+        login: async (
+          _: any,
+          { input }: { input: { email: string; address: string; message: string; signature: string } },
+          context: any
+        ): Promise<{ success: boolean; token?: string }> => {
+          try {
+            // Verify the signed message using ethers.js
+            const recoveredAddress = ethers.verifyMessage(input.message, input.signature);
+            if (recoveredAddress.toLowerCase() !== input.address.toLowerCase()) {
+              throw new Error("Signature verification failed");
+            }
+
+            const userRepository = datasource.getRepository(User);
+            // Find or create the user record based on the web3Address field
+            let user = await userRepository.findOne({ where: { web3Address: input.address } });
+            if (!user) {
+              // Automatically create a new user record if none exists.
+              user = userRepository.create({
+                web3Address: input.address,
+                username: `user_${input.address.substring(0, 6)}`,
+                email: '',
+              });
+              user = await userRepository.save(user);
+            }
+
+            // Store user info in the session (using Fastify session)
+            context.request.session.user = {
+              id: user.id,
+              web3Address: user.web3Address,
+              username: user.username,
+            };
+            await context.request.session.save();
+
+            return { success: true };
+          } catch (err: any) {
+            throw new Error("Login failed: " + err.message);
+          }
         },
+
+
       },
     },
     graphiql: true,
@@ -59,7 +91,7 @@ export async function createServer(): Promise<FastifyInstance> {
 export async function startServer(): Promise<void> {
   const app = await createServer();
   try {
-    await app.listen({ port: 3000, host: '0.0.0.0' });
+    await app.listen({ port: 3001, host: '0.0.0.0' });
     app.log.info("Fastify server is listening");
   } catch (err) {
     app.log.error(err);
