@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "@kinetic/server",
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
@@ -7,7 +7,6 @@
     "postbuild": "cp -R src/proto dist/proto",
     "start": "./node_modules/.bin/dotenv -e .env -- node dist/index.js",
     "dev": "./node_modules/.bin/dotenv -e .env -- npx tsx watch src/index.ts",
-    "codegen": "./node_modules/.bin/graphql-codegen --config codegen.yml",
     "test": "NODE_OPTIONS=--experimental-vm-modules ./node_modules/.bin/dotenv -e .env -- jest --detectOpenHandles"
   },
   "dependencies": {
@@ -18,9 +17,11 @@
     "@grpc/grpc-js": "^1.12.6",
     "@grpc/proto-loader": "^0.7.13",
     "@kinetic/db": "workspace:*",
+    "@kinetic/graphql": "workspace:*",
     "fastify": "^5.2.1",
     "fastify-plugin": "^5.0.1",
     "graphql": "^16.10.0",
+    "graphql-import-node": "^0.0.5",
     "grpc-tools": "^1.13.0",
     "jest": "29.7.0",
     "mercurius": "^16.0.1",

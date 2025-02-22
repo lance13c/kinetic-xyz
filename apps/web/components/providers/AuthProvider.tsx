@@ -5,7 +5,7 @@ import {
   LoginMutation,
   useLoginMutation,
   User
-} from '@/lib/generated/graphql';
+} from '@kinetic/graphql';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { createWalletClient, custom, WalletClient } from 'viem';
 import { mainnet } from 'viem/chains';

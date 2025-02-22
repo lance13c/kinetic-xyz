@@ -1,8 +1,8 @@
-schema: "../server/src/graphql/schema.graphql"
-documents: "../server/src/graphql/operations.graphql"
+schema: "src/schema.graphql"
+documents: "src/operations.graphql"
 ignoreNoDocuments: false
 generates:
-  lib/generated/graphql.tsx:
+  dist/graphql.tsx:
     plugins:
       - "typescript"
       - named-operations-object
@@ -10,7 +10,7 @@ generates:
       - "typescript-react-query"
     config:
       fetcher:
-        func: "../graphql-fetcher#fetcher"
+        func: "../src/graphql-fetcher#fetcher"
         isReactHook: false
       namingConvention: 'keep'
       reactQueryVersion: 5

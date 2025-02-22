@@ -3,13 +3,17 @@ import fastifyCors from '@fastify/cors';
 import fastifySession from '@fastify/session';
 import { AppDataSource, User } from '@kinetic/db';
 import Fastify, { FastifyInstance } from 'fastify';
-import { readFileSync } from 'fs';
+import { print } from 'graphql';
+import 'graphql-import-node';
 import mercurius from 'mercurius';
-import { join } from 'path';
 import 'reflect-metadata';
 import { coinDetailsSchema, formatCoinData, formatMarketCoin, formattedCoinSchema, historicalDataSchema, marketCoinSchema } from 'src/helper';
 import { verifyMessage } from 'viem';
 import { z } from 'zod';
+
+// Keep schema import graphql-import-node 
+import schema from '@kinetic/graphql/schema.graphql';
+const schemaAsText = print(schema);
 
 // Extend Fastify's request and session types to include user info.
 declare module 'fastify' {
@@ -79,7 +83,7 @@ export async function createServer(): Promise<FastifyInstance> {
   });
 
   app.register(mercurius, {
-    schema: readFileSync(join(__dirname, 'graphql', 'schema.graphql'), 'utf8'),
+    schema: schemaAsText,
     defineMutation: process.env.NODE_ENV !== 'production',
     context: (request, reply) => ({ request, reply }),
     resolvers: {

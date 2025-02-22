@@ -1,0 +1,25 @@
+{
+  "name": "@kinetic/graphql",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/graphql.tsx",
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.yml"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/graphql.tsx" 
+    },
+    "./schema.graphql": "./src/schema.graphql"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.5",
+    "@graphql-codegen/named-operations-object": "^3.1.0",
+    "@graphql-codegen/typescript": "^4.1.4",
+    "@graphql-codegen/typescript-operations": "^4.5.0",
+    "@graphql-codegen/typescript-react-query": "^6.1.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
