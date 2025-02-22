@@ -1,6 +1,9 @@
-// next.config.js
-/** @type {import('next').NextConfig} */
+import { NextConfig } from "next";
+
 const nextConfig = {
+  images: {
+    domains: ['coin-images.coingecko.com'],
+  },
   async rewrites() {
     return [
       {
@@ -9,6 +12,6 @@ const nextConfig = {
       },
     ];
   },
-};
+} satisfies NextConfig;
 
 module.exports = nextConfig;

@@ -1,4 +1,5 @@
 import fastifyCookie from '@fastify/cookie';
+import fastifyCors from '@fastify/cors';
 import fastifySession from '@fastify/session';
 import { AppDataSource, User } from '@kinetic/db';
 import Fastify, { FastifyInstance } from 'fastify';
@@ -8,6 +9,18 @@ import { join } from 'path';
 import 'reflect-metadata';
 import { verifyMessage } from 'viem';
 import { z } from 'zod';
+
+// Extend Fastify's request and session types to include user info.
+declare module 'fastify' {
+  interface FastifyRequest {
+    user?: { id: string };
+  }
+}
+declare module '@fastify/session' {
+  interface FastifySessionObject {
+    user?: { id: string };
+  }
+}
 
 // Zod schema to validate and transform login input
 const loginInputSchema = z.object({
@@ -25,13 +38,16 @@ const loginInputSchema = z.object({
 
 export async function createServer(): Promise<FastifyInstance> {
   const FASTIFY_SECRET = process.env.FASTIFY_SECRET;
-  if (!FASTIFY_SECRET) throw new Error("Missing FASTIFY_SECRET environment variable");
+  if (!FASTIFY_SECRET)
+    throw new Error("Missing FASTIFY_SECRET environment variable");
+
+  const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
+  if (!COINGECKO_API_KEY)
+    throw new Error("Missing COINGECKO_API_KEY environment variable");
 
   const app = Fastify({ logger: true });
-
   let datasource;
   try {
-    // Initialize the database connection
     datasource = await AppDataSource.initialize();
     app.log.info("Connected to PostgreSQL database");
   } catch (error) {
@@ -39,14 +55,21 @@ export async function createServer(): Promise<FastifyInstance> {
     process.exit(1);
   }
 
-  // Register cookie and session plugins BEFORE Mercurius
+  app.register(fastifyCors, { origin: true });
   app.register(fastifyCookie);
   app.register(fastifySession, {
     secret: FASTIFY_SECRET,
     cookie: { secure: process.env.NODE_ENV === 'production' },
   });
 
-  // Register an onClose hook to properly destroy the datasource when the server shuts down
+  // Authentication middleware: extract user from session and attach to request
+  app.addHook('preHandler', async (request) => {
+    if (request.session && request.session.user) {
+      request.user = request.session.user;
+    }
+  });
+
+  // Close datasource on shutdown
   app.addHook('onClose', async () => {
     if (datasource?.isInitialized) {
       await datasource.destroy();
@@ -54,9 +77,9 @@ export async function createServer(): Promise<FastifyInstance> {
     }
   });
 
-  // Register Mercurius (GraphQL) with an explicit context function so that session is available.
   app.register(mercurius, {
-    schema: readFileSync(join(__dirname, 'schema.graphql'), 'utf8'),
+    schema: readFileSync(join(__dirname, 'graphql', 'schema.graphql'), 'utf8'),
+    defineMutation: process.env.NODE_ENV !== 'production',
     context: (request, reply) => ({ request, reply }),
     resolvers: {
       Query: {
@@ -65,17 +88,107 @@ export async function createServer(): Promise<FastifyInstance> {
           const userRepository = datasource.getRepository(User);
           return userRepository.find();
         },
+        // Protected resolver: returns the authenticated user's watchlist
+        watchlist: async (_: any, __: any, context: any) => {
+          console.log("Fetching watchlist for request:", context.request);
+          const userId = context.request.user?.id;
+          if (!userId) {
+            console.log("No user ID found in context, returning mock data");
+            return ["BTC", "ETH", "SOL"]; // Mock data for testing
+          }
+
+          const userRepository = datasource.getRepository(User);
+          const user = await userRepository.findOne({ where: { id: userId } });
+          return user?.watchlist || [];
+        },
+        // New resolver: fetch market coins data with additional token address info from CoinGecko
+        marketCoins: async (_: any, args: { limit?: number; page?: number; currency?: string }) => {
+          const limit = args.limit && args.limit > 50 ? 50 : args.limit || 50;
+          const page = args.page || 1;
+          const currency = args.currency || 'usd';
+
+          console.info(`Fetching market data: limit=${limit}, page=${page}, currency=${currency}`);
+
+
+          // Call the CoinGecko markets endpoint
+          const marketsUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=${limit}&page=${page}&sparkline=false&price_change_percentage=24h`;
+          const response = await fetch(marketsUrl, {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-cg-demo-api-key': COINGECKO_API_KEY 
+            },
+          });
+          if (!response.ok) {
+            throw new Error(`CoinGecko API error: ${response.status}`);
+          }
+          const coins = await response.json();
+
+          // For each coin, fetch additional details to retrieve the Solana token address if available
+          const coinsWithTokenData = await Promise.all(coins.map(async (coin: any) => {
+            let tokenAddress: string | null = null;
+            let solscanLink: string | null = null;
+            try {
+              const detailUrl = `https://api.coingecko.com/api/v3/coins/${coin.id}`;
+              const detailResponse = await fetch(detailUrl);
+              if (detailResponse.ok) {
+                const coinDetails = await detailResponse.json();
+                if (coinDetails.platforms && coinDetails.platforms.solana) {
+                  tokenAddress = coinDetails.platforms.solana;
+                  solscanLink = `https://solscan.io/token/${tokenAddress}`;
+                }
+              }
+            } catch (error) {
+              // Log errors for individual coin detail lookup without halting overall processing
+              app.log.error(`Error fetching details for ${coin.id}:`, error);
+            }
+            return {
+              symbol: coin.symbol,
+              icon: coin.image,
+              price: coin.current_price,
+              priceChangePercentage1d: coin.price_change_percentage_24h,
+              marketCap: coin.market_cap,
+              volume24h: coin.total_volume,
+              tokenAddress,
+              solscanLink,
+            };
+          }));
+
+          return coinsWithTokenData;
+        },
+        // New resolver: fetch coin historical data within a given time range
+        coinHistoricalDataRange: async (
+          _: any,
+          args: { coinId: string; currency: string; from: number; to: number; precision?: string }
+        ) => {
+          const precisionQuery = args.precision ? `&precision=${args.precision}` : '';
+          const url = `https://api.coingecko.com/api/v3/coins/${args.coinId}/market_chart/range?vs_currency=${args.currency}&from=${args.from}&to=${args.to}${precisionQuery}`;
+          const response = await fetch(url, {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-cg-demo-api-key': COINGECKO_API_KEY
+            },
+          });
+          if (!response.ok) throw new Error('Failed to fetch historical range data');
+          const data = await response.json();
+
+          return {
+            prices: data.prices,
+            marketCaps: data.market_caps,
+            totalVolumes: data.total_volumes,
+          };
+        },
       },
       Mutation: {
+        // Login mutation now expects a single input object and logs its content
         login: async (
           _: any,
-          { input }: { input: { email: string; address: string; message: string; signature: string } },
+          { input }: { input: { email?: string; address: string; message: string; signature: string } },
           context: any
         ): Promise<{ success: boolean; token?: string }> => {
+          // Log incoming input for debugging
+          console.log("Login input received:", input);
           try {
-            // Validate and transform input using Zod
             const parsedInput = loginInputSchema.parse(input);
-
             const isVerified = await verifyMessage({
               address: parsedInput.address,
               message: parsedInput.message,
@@ -84,43 +197,61 @@ export async function createServer(): Promise<FastifyInstance> {
 
             if (!isVerified) {
               console.error("Signature verification failed");
-              // return 400 Bad Request if signature verification fails
               return { success: false };
             }
 
             const userRepository = datasource.getRepository(User);
-            // Find or create the user record based on the web3Address field
             let user = await userRepository.findOne({ where: { web3Address: parsedInput.address } });
             if (!user) {
-              // Automatically create a new user record if none exists.
               user = userRepository.create({
                 web3Address: parsedInput.address,
-                email: '',
+                email: parsedInput.email || '',
+                watchlist: [],
               });
               user = await userRepository.save(user);
             }
 
-            // Store user info in the session (context.request.session is now available)
-            context.request.session.user = {
-              id: user.id,
-              web3Address: user.web3Address,
-            };
+            context.request.session.user = { id: user.id };
             await context.request.session.save();
-
             return { success: true };
           } catch (err: any) {
             throw new Error("Login failed: " + err.message);
           }
         },
+        toggleWatchlist: async (_: any, { coinId }: { coinId: string }, context: any): Promise<string[]> => {
+          const userId = context.request.user?.id;
+          if (!userId) {
+            console.log("No user ID found in context, returning mock data");
+            return ["BTC", "ETH", "SOL"]; // Mock data for testing
+          }
+          
+          const userRepository = datasource.getRepository(User);
+          const user = await userRepository.findOne({ where: { id: userId } });
+          if (!user) throw new Error("User not found");
+
+          let watchlist: string[] = user.watchlist || [];
+          if (watchlist.includes(coinId)) {
+            watchlist = watchlist.filter(id => id !== coinId);
+          } else {
+            watchlist.push(coinId);
+          }
+
+          user.watchlist = watchlist;
+          await userRepository.update(user.id, { watchlist });
+
+          return watchlist;
+        },
       },
     },
-    graphiql: true,
+    graphiql: true
   });
 
   return app;
 }
 
-// Start the server by creating it and listening on a port
+
+
+// Start the server
 export async function startServer(): Promise<void> {
   const app = await createServer();
   try {

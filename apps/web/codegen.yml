@@ -1,11 +1,16 @@
-schema: "http://localhost:3001/graphql"  # Update this URL as needed
-documents: "lib/graphql/**/*.graphql"     # Your GraphQL queries/mutations location
-ignoreNoDocuments: true
+schema: "../server/src/graphql/schema.graphql"
+documents: "../server/src/graphql/operations.graphql"
+ignoreNoDocuments: false
 generates:
   lib/generated/graphql.tsx:
     plugins:
       - "typescript"
+      - named-operations-object
       - "typescript-operations"
       - "typescript-react-query"
     config:
-      fetcher: "fetch"   # or "graphql-request" if preferred
+      fetcher:
+        func: "../graphql-fetcher#fetcher"
+        isReactHook: false
+      namingConvention: 'keep'
+      reactQueryVersion: 5

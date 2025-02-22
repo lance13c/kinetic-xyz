@@ -1,0 +1,61 @@
+type User {
+  id: ID!
+  email: String!
+  web3Address: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# New type for historical data using the /market_chart/range endpoint
+type CoinHistoricalDataRange {
+  prices: [[Float]]!         # Array of [timestamp, price]
+  marketCaps: [[Float]]!     # Array of [timestamp, market cap]
+  totalVolumes: [[Float]]!   # Array of [timestamp, volume]
+}
+
+# Market coin type with token address info
+type CoinMarketData {
+  symbol: String!
+  icon: String!
+  price: Float!
+  priceChangePercentage1d: Float!
+  marketCap: Float!
+  volume24h: Float!
+  tokenAddress: String
+  solscanLink: String
+}
+
+input LoginInput {
+  email: String
+  address: String!
+  message: String!
+  signature: String!
+}
+
+type LoginResponse {
+  success: Boolean!
+  token: String
+}
+
+type Query {
+  users: [User!]!
+  watchlist: [String!]!
+  marketCoins(limit: Int, page: Int, currency: String): [CoinMarketData!]!
+  coinHistoricalDataRange(
+    coinId: String!
+    currency: String!
+    from: Int!
+    to: Int!
+    precision: String
+  ): CoinHistoricalDataRange!
+}
+
+type Mutation {
+  login(input: LoginInput!): LoginResponse!
+  toggleWatchlist(coinId: String!): [String!]!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}

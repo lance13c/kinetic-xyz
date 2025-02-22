@@ -1,0 +1,27 @@
+query GetWatchlist {
+  watchlist
+}
+
+mutation ToggleWatchlist($coinId: String!) {
+  toggleWatchlist(coinId: $coinId)
+}
+
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    success
+    token
+  }
+}
+
+query GetMarketCoins($limit: Int, $page: Int, $currency: String) {
+  marketCoins(limit: $limit, page: $page, currency: $currency) {
+    symbol
+    icon
+    price
+    priceChangePercentage1d
+    marketCap
+    volume24h
+    tokenAddress
+    solscanLink
+  }
+}
