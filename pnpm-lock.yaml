@@ -195,6 +195,10 @@ importers:
         version: 5.7.3
 
   packages/graphql:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.66.9
+        version: 5.66.9(react@19.0.0)
     devDependencies:
       '@graphql-codegen/cli':
         specifier: ^5.0.5

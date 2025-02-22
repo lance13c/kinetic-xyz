@@ -1,15 +1,15 @@
 'use client';
 
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useQueryClient } from '@tanstack/react-query';
-import { Star } from 'lucide-react';
-import Image from 'next/image';
 import {
   CoinMarketData,
   useGetMarketCoinsQuery,
   useGetWatchlistQuery,
   useToggleWatchlistMutation,
-} from '../lib/generated/graphql';
+} from '@kinetic/graphql';
+import { useQueryClient } from '@tanstack/react-query';
+import { Star } from 'lucide-react';
+import Image from 'next/image';
 
 const CoinTable = () => {
   const { isAuthenticated } = useAuth(); // Get authentication status
@@ -67,7 +67,6 @@ const CoinTable = () => {
     }
   });
 
-
   const formatNumber = (num: number, isCurrency = true) => {
     if (num >= 1_000_000_000) {
       return `${isCurrency ? '$' : ''}${(num / 1_000_000_000).toLocaleString(userLocale, {
@@ -95,9 +94,11 @@ const CoinTable = () => {
   }
 
   return (
-    <div className="overflow-x-auto">
+    // Added max height and vertical overflow to make table body scrollable
+    <div className="overflow-x-auto max-h-96 overflow-y-auto">
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-800 font-[family-name:var(--font-geist-mono)]">
+        {/* Added sticky header classes */}
+        <thead className="bg-gray-50 dark:bg-gray-800 font-[family-name:var(--font-geist-mono)] sticky top-0 z-10">
           <tr>
             {isAuthenticated && <th className="px-2 py-3" />}
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -123,7 +124,7 @@ const CoinTable = () => {
               {isAuthenticated && (
                 <td className="px-2 py-4 whitespace-nowrap">
                   <button
-                    title='Add to watchlist'
+                    title="Add to watchlist"
                     onClick={() => toggleWatchlist({ coinId: coin.id })}
                     className="p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:bg-gray-100 dark:focus:bg-gray-800 focus-visible:outline-none transition-colors"
                   >
