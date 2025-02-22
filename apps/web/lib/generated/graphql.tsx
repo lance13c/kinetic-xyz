@@ -1,4 +1,4 @@
-import { useMutation, UseMutationOptions, useQuery, UseQueryOptions } from '@tanstack/react-query';
+import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
 import { fetcher } from '../graphql-fetcher';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -26,6 +26,7 @@ export type CoinHistoricalDataRange = {
 export type CoinMarketData = {
   __typename?: 'CoinMarketData';
   icon: Scalars['String']['output'];
+  id: Scalars['String']['output'];
   marketCap: Scalars['Float']['output'];
   price: Scalars['Float']['output'];
   priceChangePercentage1d: Scalars['Float']['output'];
@@ -51,6 +52,7 @@ export type LoginResponse = {
 export type Mutation = {
   __typename?: 'Mutation';
   login: LoginResponse;
+  logout: Scalars['Boolean']['output'];
   toggleWatchlist: Array<Scalars['String']['output']>;
 };
 
@@ -68,8 +70,9 @@ export type Query = {
   __typename?: 'Query';
   coinHistoricalDataRange: CoinHistoricalDataRange;
   marketCoins: Array<CoinMarketData>;
+  me?: Maybe<User>;
   users: Array<User>;
-  watchlist: Array<Scalars['String']['output']>;
+  watchlist: Array<CoinMarketData>;
 };
 
 
@@ -110,7 +113,7 @@ export const namedOperations = {
 export type GetWatchlistQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetWatchlistQuery = { __typename?: 'Query', watchlist: Array<string> };
+export type GetWatchlistQuery = { __typename?: 'Query', watchlist: Array<{ __typename?: 'CoinMarketData', id: string, symbol: string, icon: string, price: number, priceChangePercentage1d: number, marketCap: number, volume24h: number, tokenAddress?: string | null, solscanLink?: string | null }> };
 
 export type ToggleWatchlistMutationVariables = Exact<{
   coinId: Scalars['String']['input'];
@@ -133,13 +136,23 @@ export type GetMarketCoinsQueryVariables = Exact<{
 }>;
 
 
-export type GetMarketCoinsQuery = { __typename?: 'Query', marketCoins: Array<{ __typename?: 'CoinMarketData', symbol: string, icon: string, price: number, priceChangePercentage1d: number, marketCap: number, volume24h: number, tokenAddress?: string | null, solscanLink?: string | null }> };
+export type GetMarketCoinsQuery = { __typename?: 'Query', marketCoins: Array<{ __typename?: 'CoinMarketData', id: string, symbol: string, icon: string, price: number, priceChangePercentage1d: number, marketCap: number, volume24h: number, tokenAddress?: string | null, solscanLink?: string | null }> };
 
 
 
 export const GetWatchlistDocument = `
     query GetWatchlist {
-  watchlist
+  watchlist {
+    id
+    symbol
+    icon
+    price
+    priceChangePercentage1d
+    marketCap
+    volume24h
+    tokenAddress
+    solscanLink
+  }
 }
     `;
 
@@ -190,7 +203,7 @@ export const LoginDocument = `
 export const useLoginMutation = <
       TError = unknown,
       TContext = unknown
-    >(p0: { endpoint: string; fetchParams: { headers: { 'Content-Type': string; }; }; }, options?: UseMutationOptions<LoginMutation, TError, LoginMutationVariables, TContext>) => {
+    >(options?: UseMutationOptions<LoginMutation, TError, LoginMutationVariables, TContext>) => {
     
     return useMutation<LoginMutation, TError, LoginMutationVariables, TContext>(
       {
@@ -203,6 +216,7 @@ export const useLoginMutation = <
 export const GetMarketCoinsDocument = `
     query GetMarketCoins($limit: Int, $page: Int, $currency: String) {
   marketCoins(limit: $limit, page: $page, currency: $currency) {
+    id
     symbol
     icon
     price

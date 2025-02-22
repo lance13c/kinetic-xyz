@@ -6,7 +6,7 @@ type User {
   updatedAt: String!
 }
 
-# New type for historical data using the /market_chart/range endpoint
+# Historical data type
 type CoinHistoricalDataRange {
   prices: [[Float]]!         # Array of [timestamp, price]
   marketCaps: [[Float]]!     # Array of [timestamp, market cap]
@@ -15,6 +15,7 @@ type CoinHistoricalDataRange {
 
 # Market coin type with token address info
 type CoinMarketData {
+  id: String!
   symbol: String!
   icon: String!
   price: Float!
@@ -38,8 +39,9 @@ type LoginResponse {
 }
 
 type Query {
+  me: User
   users: [User!]!
-  watchlist: [String!]!
+  watchlist: [CoinMarketData!]!  
   marketCoins(limit: Int, page: Int, currency: String): [CoinMarketData!]!
   coinHistoricalDataRange(
     coinId: String!
@@ -52,6 +54,7 @@ type Query {
 
 type Mutation {
   login(input: LoginInput!): LoginResponse!
+  logout: Boolean!
   toggleWatchlist(coinId: String!): [String!]!
 }
 

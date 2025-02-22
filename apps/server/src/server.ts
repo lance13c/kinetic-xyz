@@ -7,6 +7,7 @@ import { readFileSync } from 'fs';
 import mercurius from 'mercurius';
 import { join } from 'path';
 import 'reflect-metadata';
+import { coinDetailsSchema, formatCoinData, formatMarketCoin, formattedCoinSchema, historicalDataSchema, marketCoinSchema } from 'src/helper';
 import { verifyMessage } from 'viem';
 import { z } from 'zod';
 
@@ -82,110 +83,149 @@ export async function createServer(): Promise<FastifyInstance> {
     defineMutation: process.env.NODE_ENV !== 'production',
     context: (request, reply) => ({ request, reply }),
     resolvers: {
+      // Update your resolvers to use the schemas
       Query: {
-        // Return a list of users from the database
-        users: async () => {
-          const userRepository = datasource.getRepository(User);
-          return userRepository.find();
-        },
-        // Protected resolver: returns the authenticated user's watchlist
-        watchlist: async (_: any, __: any, context: any) => {
-          console.log("Fetching watchlist for request:", context.request);
+        me: async (_: any, __: any, context: any): Promise<User | null> => {
           const userId = context.request.user?.id;
           if (!userId) {
-            console.log("No user ID found in context, returning mock data");
-            return ["BTC", "ETH", "SOL"]; // Mock data for testing
+            return null;
           }
 
           const userRepository = datasource.getRepository(User);
-          const user = await userRepository.findOne({ where: { id: userId } });
-          return user?.watchlist || [];
+          return userRepository.findOne({ where: { id: userId } });
         },
-        // New resolver: fetch market coins data with additional token address info from CoinGecko
+        watchlist: async (_: any, __: any, context: any): Promise<any[]> => {
+          const userId = context.request.user?.id;
+          if (!userId) {
+            return [];
+          }
+
+          const fetchAndFormatCoin = async (coinId: string) => {
+            try {
+              const response = await fetch(
+                `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true&sparkline=false`,
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-cg-demo-api-key': COINGECKO_API_KEY
+                  },
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error(`Failed to fetch data for coin ${coinId}: ${response.statusText}`);
+              }
+
+              const rawData = await response.json();
+              // Validate the raw data
+              const validatedCoin = coinDetailsSchema.parse(rawData);
+              // Format the validated data
+              return formatCoinData(validatedCoin);
+            } catch (error) {
+              console.error(`Error fetching/validating data for coin ${coinId}:`, error);
+              return null;
+            }
+          };
+
+          const userRepository = datasource.getRepository(User);
+          const user = await userRepository.findOne({ where: { id: userId } });
+          if (!user?.watchlist?.length) {
+            console.info("No watchlist found for user", userId);
+            return [];
+          }
+
+          const coinData = await Promise.all(user.watchlist.map(fetchAndFormatCoin));
+          return coinData.filter((data): data is z.infer<typeof formattedCoinSchema> => data !== null);
+        },
+
         marketCoins: async (_: any, args: { limit?: number; page?: number; currency?: string }) => {
           const limit = args.limit && args.limit > 50 ? 50 : args.limit || 50;
           const page = args.page || 1;
           const currency = args.currency || 'usd';
 
-          console.info(`Fetching market data: limit=${limit}, page=${page}, currency=${currency}`);
-
-
-          // Call the CoinGecko markets endpoint
+          // Fetch market data
           const marketsUrl = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency}&order=market_cap_desc&per_page=${limit}&page=${page}&sparkline=false&price_change_percentage=24h`;
           const response = await fetch(marketsUrl, {
             headers: {
               'Content-Type': 'application/json',
-              'x-cg-demo-api-key': COINGECKO_API_KEY 
+              'x-cg-demo-api-key': COINGECKO_API_KEY
             },
           });
+
           if (!response.ok) {
             throw new Error(`CoinGecko API error: ${response.status}`);
           }
-          const coins = await response.json();
 
-          // For each coin, fetch additional details to retrieve the Solana token address if available
-          const coinsWithTokenData = await Promise.all(coins.map(async (coin: any) => {
-            let tokenAddress: string | null = null;
-            let solscanLink: string | null = null;
-            try {
-              const detailUrl = `https://api.coingecko.com/api/v3/coins/${coin.id}`;
-              const detailResponse = await fetch(detailUrl);
-              if (detailResponse.ok) {
-                const coinDetails = await detailResponse.json();
-                if (coinDetails.platforms && coinDetails.platforms.solana) {
-                  tokenAddress = coinDetails.platforms.solana;
-                  solscanLink = `https://solscan.io/token/${tokenAddress}`;
+          const rawCoins = await response.json();
+          // Validate the market data
+          const validatedCoins = z.array(marketCoinSchema).parse(rawCoins);
+
+          // Fetch and validate additional details for each coin
+          const coinsWithTokenData = await Promise.all(
+            validatedCoins.map(async (coin) => {
+              try {
+                const detailUrl = `https://api.coingecko.com/api/v3/coins/${coin.id}`;
+                const detailResponse = await fetch(detailUrl, {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-cg-demo-api-key': COINGECKO_API_KEY
+                  },
+                });
+
+                if (!detailResponse.ok) {
+                  return formatMarketCoin(coin, { tokenAddress: null });
                 }
+
+                const rawDetails = await detailResponse.json();
+                const validatedDetails = coinDetailsSchema.parse(rawDetails);
+
+                return formatMarketCoin(coin, {
+                  tokenAddress: validatedDetails.platforms.solana || null
+                });
+              } catch (error) {
+                console.error(`Error fetching details for ${coin.id}:`, error);
+                return formatMarketCoin(coin, { tokenAddress: null });
               }
-            } catch (error) {
-              // Log errors for individual coin detail lookup without halting overall processing
-              app.log.error(`Error fetching details for ${coin.id}:`, error);
-            }
-            return {
-              symbol: coin.symbol,
-              icon: coin.image,
-              price: coin.current_price,
-              priceChangePercentage1d: coin.price_change_percentage_24h,
-              marketCap: coin.market_cap,
-              volume24h: coin.total_volume,
-              tokenAddress,
-              solscanLink,
-            };
-          }));
+            })
+          );
 
           return coinsWithTokenData;
         },
-        // New resolver: fetch coin historical data within a given time range
+
         coinHistoricalDataRange: async (
           _: any,
           args: { coinId: string; currency: string; from: number; to: number; precision?: string }
         ) => {
           const precisionQuery = args.precision ? `&precision=${args.precision}` : '';
           const url = `https://api.coingecko.com/api/v3/coins/${args.coinId}/market_chart/range?vs_currency=${args.currency}&from=${args.from}&to=${args.to}${precisionQuery}`;
+
           const response = await fetch(url, {
             headers: {
               'Content-Type': 'application/json',
               'x-cg-demo-api-key': COINGECKO_API_KEY
             },
           });
-          if (!response.ok) throw new Error('Failed to fetch historical range data');
-          const data = await response.json();
 
-          return {
-            prices: data.prices,
-            marketCaps: data.market_caps,
-            totalVolumes: data.total_volumes,
-          };
+          if (!response.ok) {
+            throw new Error('Failed to fetch historical range data');
+          }
+
+          const rawData = await response.json();
+          return historicalDataSchema.parse(rawData);
         },
       },
       Mutation: {
-        // Login mutation now expects a single input object and logs its content
+        logout: async (_: any, __: any, context: any) => {
+          if (context.request.session) {
+            await context.request.session.destroy();
+          }
+          return true;
+        },
         login: async (
           _: any,
           { input }: { input: { email?: string; address: string; message: string; signature: string } },
           context: any
         ): Promise<{ success: boolean; token?: string }> => {
-          // Log incoming input for debugging
           console.log("Login input received:", input);
           try {
             const parsedInput = loginInputSchema.parse(input);
@@ -222,9 +262,9 @@ export async function createServer(): Promise<FastifyInstance> {
           const userId = context.request.user?.id;
           if (!userId) {
             console.log("No user ID found in context, returning mock data");
-            return ["BTC", "ETH", "SOL"]; // Mock data for testing
+            return [];
           }
-          
+
           const userRepository = datasource.getRepository(User);
           const user = await userRepository.findOne({ where: { id: userId } });
           if (!user) throw new Error("User not found");

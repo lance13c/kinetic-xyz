@@ -21,6 +21,7 @@ export const fetcher = <TData, TVariables>(
     const res = await fetch(endpoint, {
       method: 'POST',
       headers,
+      credentials: 'include',
       body: JSON.stringify(body),
     });
     const json = await res.json();

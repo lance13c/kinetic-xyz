@@ -84,11 +84,11 @@ const CoinTable = () => {
           {coins?.map((coin) => (
             <tr key={coin.symbol} className="hover:bg-gray-50 dark:hover:bg-gray-800">
               <td className="px-2 py-4 whitespace-nowrap">
-                <button onClick={() => toggleWatchlist({ coinId: coin.symbol })} className="focus:outline-none">
+                <button onClick={() => toggleWatchlist({ coinId: coin.id })} className="focus:outline-none">
                   <Star
                     size={18}
                     className={
-                      watchlist && watchlist.includes(coin.symbol)
+                      watchlist && watchlist.find((watchlistCoin) => watchlistCoin.id === coin.id)
                         ? 'text-yellow-400 fill-yellow-400'
                         : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                     }

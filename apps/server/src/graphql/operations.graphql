@@ -1,5 +1,15 @@
 query GetWatchlist {
-  watchlist
+  watchlist {
+    id
+    symbol
+    icon
+    price
+    priceChangePercentage1d
+    marketCap
+    volume24h
+    tokenAddress
+    solscanLink
+  }
 }
 
 mutation ToggleWatchlist($coinId: String!) {
@@ -15,6 +25,7 @@ mutation Login($input: LoginInput!) {
 
 query GetMarketCoins($limit: Int, $page: Int, $currency: String) {
   marketCoins(limit: $limit, page: $page, currency: $currency) {
+    id
     symbol
     icon
     price

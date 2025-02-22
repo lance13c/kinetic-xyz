@@ -2,7 +2,23 @@ import { NextConfig } from "next";
 
 const nextConfig = {
   images: {
-    domains: ['coin-images.coingecko.com'],
+    remotePatterns: [
+      {
+        hostname: 'images.coingecko.com',
+        pathname: '/coins/**',
+        protocol: 'https',
+      },
+      {
+        hostname: 'coin-images.coingecko.com',
+        pathname: '/coins/**',
+        protocol: 'https',
+      },
+      {
+        hostname: 'assets.coingecko.com',
+        pathname: '/coins/**',
+        protocol: 'https',
+      }
+    ]
   },
   async rewrites() {
     return [
