@@ -1,5 +1,5 @@
 'use client';
-import { useGetWatchlistQuery, useToggleWatchlistMutation } from '@/lib/generated/graphql';
+import { useGetWatchlistQuery, useToggleWatchlistMutation } from '@kinetic/graphql';
 import { useQueryClient } from '@tanstack/react-query';
 import { TrendingDown, TrendingUp, X } from 'lucide-react';
 import Image from 'next/image';

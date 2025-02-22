@@ -16,7 +16,9 @@ const CoinTable = () => {
   const userLocale = typeof navigator !== 'undefined' ? navigator.language : 'en-US';
 
   const { data: marketData, isLoading: coinsLoading, error: coinsError } =
-    useGetMarketCoinsQuery({ limit: 10, page: 1, currency: 'usd' });
+    useGetMarketCoinsQuery({ limit: 10, page: 1, currency: 'usd' }, {
+      refetchInterval: 30_000, // Refetch every 30 seconds
+    });
   const coins = marketData?.marketCoins;
 
   const { data: watchlistData } = useGetWatchlistQuery({}, { enabled: isAuthenticated, subscribed: true });
