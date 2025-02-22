@@ -10,27 +10,22 @@ import {
 } from '../lib/generated/graphql';
 
 const CoinTable = () => {
-  // Get the browser's current locale for number formatting
   const userLocale = typeof navigator !== 'undefined' ? navigator.language : 'en-US';
 
-  // Use generated hook for fetching market coins, passing the default dataSource
   const { data: marketData, isLoading: coinsLoading, error: coinsError } =
     useGetMarketCoinsQuery({ limit: 10, page: 1, currency: 'usd' });
   const coins = marketData?.marketCoins;
 
-  // Use generated hook for fetching the watchlist, passing the default dataSource
   const { data: watchlistData } = useGetWatchlistQuery();
   const watchlist = watchlistData?.watchlist;
 
   const queryClient = useQueryClient();
-  // Use generated mutation hook for toggling watchlist items
   const { mutate: toggleWatchlist } = useToggleWatchlistMutation({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['GetWatchlist'] });
     },
   });
 
-  // Utility function to format numbers according to the user's locale
   const formatNumber = (num: number, isCurrency = true) => {
     if (num >= 1_000_000_000) {
       return `${isCurrency ? '$' : ''}${(num / 1_000_000_000).toLocaleString(userLocale, {
@@ -82,9 +77,12 @@ const CoinTable = () => {
         </thead>
         <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
           {coins?.map((coin) => (
-            <tr key={coin.symbol} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+            <tr key={coin.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
               <td className="px-2 py-4 whitespace-nowrap">
-                <button onClick={() => toggleWatchlist({ coinId: coin.id })} className="focus:outline-none">
+                <button
+                  onClick={() => toggleWatchlist({ coinId: coin.id })}
+                  className="p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible::bg-gray-100 dark:focus:bg-gray-800 focus-visible::outline-none transition-colors"
+                >
                   <Star
                     size={18}
                     className={
