@@ -1,30 +1,72 @@
 'use client';
 
+import { useAuth } from '@/components/providers/AuthProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
 import Image from 'next/image';
 import {
+  CoinMarketData,
   useGetMarketCoinsQuery,
   useGetWatchlistQuery,
   useToggleWatchlistMutation,
 } from '../lib/generated/graphql';
 
 const CoinTable = () => {
+  const { isAuthenticated } = useAuth(); // Get authentication status
   const userLocale = typeof navigator !== 'undefined' ? navigator.language : 'en-US';
 
   const { data: marketData, isLoading: coinsLoading, error: coinsError } =
     useGetMarketCoinsQuery({ limit: 10, page: 1, currency: 'usd' });
   const coins = marketData?.marketCoins;
 
-  const { data: watchlistData } = useGetWatchlistQuery();
+  const { data: watchlistData } = useGetWatchlistQuery({}, { enabled: isAuthenticated, subscribed: true });
   const watchlist = watchlistData?.watchlist;
 
   const queryClient = useQueryClient();
+  // Updated optimistic update mutation code
   const { mutate: toggleWatchlist } = useToggleWatchlistMutation({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['GetWatchlist'] });
+    onMutate: async ({ coinId }) => {
+      // Use the same query key as the watchlist query hook
+      const queryKey = ['GetWatchlist', {}];
+
+      // Cancel any outgoing refetches to avoid overwriting our optimistic update
+      await queryClient.cancelQueries({ queryKey });
+
+      const previousWatchlist = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: any) => {
+        const currentWatchlist: CoinMarketData[] = old?.watchlist || [];
+        const coinToAdd = coins?.find(c => c.id === coinId);
+
+        if (currentWatchlist.find((c: any) => c.id === coinId)) {
+          // Remove coin if it's already in the watchlist
+          return {
+            ...old,
+            watchlist: currentWatchlist.filter((c: any) => c.id !== coinId)
+          };
+        } else if (coinToAdd) {
+          // Add coin if it's not in the watchlist
+          return {
+            ...old,
+            watchlist: [...currentWatchlist, coinToAdd]
+          };
+        }
+        return old;
+      });
+
+      // Return context for rollback if needed
+      return { previousWatchlist };
     },
+    onError: (err, variables, context) => {
+      if (context?.previousWatchlist) {
+        queryClient.setQueryData(['GetWatchlist', {}], context.previousWatchlist);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['GetWatchlist', {}] });
+    }
   });
+
 
   const formatNumber = (num: number, isCurrency = true) => {
     if (num >= 1_000_000_000) {
@@ -57,7 +99,7 @@ const CoinTable = () => {
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead className="bg-gray-50 dark:bg-gray-800 font-[family-name:var(--font-geist-mono)]">
           <tr>
-            <th className="px-2 py-3" />
+            {isAuthenticated && <th className="px-2 py-3" />}
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Name
             </th>
@@ -78,21 +120,24 @@ const CoinTable = () => {
         <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
           {coins?.map((coin) => (
             <tr key={coin.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-              <td className="px-2 py-4 whitespace-nowrap">
-                <button
-                  onClick={() => toggleWatchlist({ coinId: coin.id })}
-                  className="p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible::bg-gray-100 dark:focus:bg-gray-800 focus-visible::outline-none transition-colors"
-                >
-                  <Star
-                    size={18}
-                    className={
-                      watchlist && watchlist.find((watchlistCoin) => watchlistCoin.id === coin.id)
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                    }
-                  />
-                </button>
-              </td>
+              {isAuthenticated && (
+                <td className="px-2 py-4 whitespace-nowrap">
+                  <button
+                    title='Add to watchlist'
+                    onClick={() => toggleWatchlist({ coinId: coin.id })}
+                    className="p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:bg-gray-100 dark:focus:bg-gray-800 focus-visible:outline-none transition-colors"
+                  >
+                    <Star
+                      size={18}
+                      className={
+                        watchlist && watchlist.find((watchlistCoin) => watchlistCoin.id === coin.id)
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                      }
+                    />
+                  </button>
+                </td>
+              )}
               <td className="px-4 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   <Image src={coin.icon} alt={`${coin.symbol} icon`} width={24} height={24} className="mr-2" />
