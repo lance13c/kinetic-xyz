@@ -9,6 +9,11 @@
 * Docker Desktop (to launch the database)
 * Ethereum chain wallet with browser extension like Metamask. You will need the browser extension. (Only tested with metamask)
 
+### Port Requirements
+- Port 3000 must be available for the web client
+- Port 3001 must be available for the GraphQL server
+- Port 5432 must be available for PostgreSQL
+
 ### Warnings
 
 CoinGecko Too Many Requests - You can reach the CoinGecko if you refresh a lot on a demo api key. This will prevent the marketplace from loading.
@@ -66,9 +71,8 @@ For to access the wallet information I used `viem` package.
 Login works the same as signup except if there isn't an existing user I create one.
 
 This can be better in multiple ways.
-1. It should be using a nonce from the server for the initial message.
-2. We can use an existing library like next auth or similar that can help with session management.
-
+1. Server nonce should be implemented for initial message signing.
+2. Consider using an established auth library (i.e. NextAuth) for better session management.
 
 ### Backend
 
@@ -109,9 +113,6 @@ Nextjs is best served on Vercel.
 * Check the numbers to ensure they are correct
 * Fix server tests
 
-
-
-# Examples/Demo
 
 # Examples/Demo
 
