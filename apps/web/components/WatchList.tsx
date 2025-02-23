@@ -1,3 +1,4 @@
+import { useAuth } from '@/components/providers/AuthProvider';
 import { BoundingBox, useAnimatePosition } from '@/context/AnimatePositionRef';
 import { useGetWatchlistQuery, useToggleWatchlistMutation } from '@kinetic/graphql';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,6 +10,7 @@ import { useCallback, useEffect, useRef } from 'react';
 const COIN_Y_OFFSET = 80;
 
 const Watchlist = () => {
+  const { isAuthenticated } = useAuth();
   const { setPosition } = useAnimatePosition();
   const { data, isLoading, error } = useGetWatchlistQuery({}, {
     subscribed: true,
@@ -65,6 +67,14 @@ const Watchlist = () => {
   useEffect(() => {
     recalculatePosition();
   }, [data, recalculatePosition]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      queryClient.setQueryData(['GetWatchlist', {}], null);
+      queryClient.removeQueries({ queryKey: ['GetWatchlist', {}] });
+    }
+  }, [isAuthenticated, queryClient]);
+
 
   const renderContent = () => {
     if (isLoading) {
