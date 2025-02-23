@@ -38,7 +38,6 @@ const CoinTable = () => {
     startRect: DOMRect;
   } | null>(null);
 
-  // Toggle watchlist mutation (optimistic update remains unchanged).
   const { mutate: toggleWatchlist } = useToggleWatchlistMutation({
     onMutate: async ({ coinId }) => {
       const queryKey = ['GetWatchlist', {}] as const;
@@ -85,11 +84,14 @@ const CoinTable = () => {
 
   // Handle click on the "Add to watchlist" button.
   const handleAddCoin = (coin: CoinMarketData) => {
+    console.info('coin', coin);
     const coinImageEl = coinImageRefs.current[coin.id];
     if (coinImageEl && !watchlist?.find((watchlistCoin) => watchlistCoin.id === coin.id)) {
+      console.log("did not find coin in watchlist", coin.id);
       const startRect = coinImageEl.getBoundingClientRect();
       setAnimatingCoin({ coin, startRect });
     } else {
+      console.info('toggleWatchlist', coin.id);
       toggleWatchlist({ coinId: coin.id });
     }
   };

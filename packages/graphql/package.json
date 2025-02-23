@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/graphql.tsx",
   "scripts": {
-    "codegen": "graphql-codegen --config codegen.yml"
+    "build": "graphql-codegen --config codegen.yml"
   },
   "exports": {
     ".": {

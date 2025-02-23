@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/kinetic-db
+      - NODE_ENV=production
+    depends_on:
+      - db
+    networks:
+      - kinetic-network
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=kinetic-db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - kinetic-network
+
+volumes:
+  postgres_data:
+
+networks:
+  kinetic-network:
+    driver: bridge

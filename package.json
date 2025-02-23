@@ -1,7 +1,11 @@
 {
-  "name": "kinetic-xyz-monorepo",
+  "name": "kinetic-monorepo",
   "private": true,
   "scripts": {
-    "build": "pnpm recursive run build"
+    "build": "pnpm recursive run build",
+    "dev:setup": "pnpm -r --filter=@kinetic/graphql --filter=@kinetic/db build",
+    "dev": "pnpm recursive run dev",
+    "db:start": "pnpm --filter @kinetic/db db:start",
+    "db:stop": "pnpm --filter @kinetic/db db:stop"
   }
 }
