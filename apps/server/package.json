@@ -3,8 +3,6 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && cp -R src/proto dist/proto",
-    "postbuild": "cp -R src/proto dist/proto",
     "start": "./node_modules/.bin/dotenv -e .env -- node dist/index.js",
     "dev": "./node_modules/.bin/dotenv -e .env -- npx tsx watch src/index.ts",
     "test": "NODE_OPTIONS=--experimental-vm-modules ./node_modules/.bin/dotenv -e .env -- jest --detectOpenHandles"

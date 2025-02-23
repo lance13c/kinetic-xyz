@@ -10,6 +10,10 @@
 * Ethereum chain wallet with browser extension like Metamask. You will need the browser extension. (I only tested it with metamask)
 
 
+### Warnings
+
+CoinGecko Too Many Requests - You can reach the CoinGecko if you refresh a lot on a demo api key. This will prevent the marketplace from loading.
+
 ## How to Run
 
 

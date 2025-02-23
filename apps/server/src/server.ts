@@ -110,8 +110,8 @@ export async function createServer(): Promise<FastifyInstance> {
                 `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=true&market_data=true&community_data=true&developer_data=true&sparkline=false`,
                 {
                   headers: {
-                    'Content-Type': 'application/json',
-                    'x-cg-demo-api-key': COINGECKO_API_KEY
+                    'accept': 'application/json', // Use 'accept' header for GET requests per API docs
+                    'x-cg-demo-api-key': COINGECKO_API_KEY,
                   },
                 }
               );
