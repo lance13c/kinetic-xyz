@@ -6,9 +6,8 @@
 
 * NodeJS Version v20.13.1
 * `pnpm` 9.15.3 or greater
-* Docker Desktop
-* Ethereum chain wallet with browser extension like Metamask. You will need the browser extension. (I only tested it with metamask)
-
+* Docker Desktop (to launch the database)
+* Ethereum chain wallet with browser extension like Metamask. You will need the browser extension. (Only tested with metamask)
 
 ### Warnings
 
@@ -47,15 +46,14 @@ The graphql server is hosted on port 3001
 The webapp is hosted on port 3000
 
 ### Others
-You might want to reload the VS Code windows because types in files might still look broken.
+You might want to reload the VS Code after running `pnpm dev` because the types in files might still be erroring.
+You may need to run `pnpm install` again after `pnpm dev:setup`.
 
 ## Production Deploy
 
 This is not ready for a production deploy.
 However if we were to do it I'd run the database and server on replicate and the nextjs portion on Vercel.
-
 We would need to correctly configure CORS, and handle authentication in a more professional way.
-
 
 ## Architecture
 This is monorepo built with `pnpm` with the goal of keeping the apps and helper packages separated.
@@ -66,7 +64,6 @@ For authentication I setup a very basic web3 login using the Ethereum chain wall
 For to access the wallet information I used `viem` package.
 
 Login works the same as signup except if there isn't an existing user I create one.
-The AuthProvider handle 
 
 This can be better in multiple ways.
 1. It should be using a nonce from the server for the initial message.
@@ -77,7 +74,6 @@ This can be better in multiple ways.
 
 For the backend I went with Fastify, GraphQL, and TypeORM test out how it feels code and get the bonus points.
 I've never worked Fastify or TypeORM before, and only setup GraphQL from scratch once before. Getting this configured correctly took most of my time.
-
 
 
 ### Frontend
@@ -98,6 +94,12 @@ On mobile we can put the watchlist behind the a separate tab, but on desktop it 
 Interactions of adding and removing it from the watchlist should appear instantly, which means we need some kind of local state.
 Instead of setting up extra local state providers I decided to use react query and its mutations to quickly update the local cache of the app. In my experience this isn't always the prettiest way in terms of a developer's perspective, but was quick and efficient and did not require any more packages. It think it works quite well for this simple app.
 
+## Docker
+
+Docker is used to launch the database in development. Everything else is run locally.
+
+The docker compose could possibly be used to launch the database and server on replicate on the future.
+Nextjs is best served on Vercel.
 
 ## Next Steps
 * Allow Searching for coins

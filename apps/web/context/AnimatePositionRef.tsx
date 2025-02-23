@@ -33,7 +33,7 @@ export const useAnimatePosition = (): AnimatePositionContextType => {
 // Provider component to wrap the part of your app that needs the position state
 export const AnimatePositionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [position, setPosition] = useState<BoundingBox | null>({
-    x: 0,
+    x: 1000,
     y: 0,
     top: 0,
     left: 0,

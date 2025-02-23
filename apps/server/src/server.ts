@@ -294,8 +294,6 @@ export async function createServer(): Promise<FastifyInstance> {
 }
 
 
-
-// Start the server
 export async function startServer(): Promise<void> {
   const app = await createServer();
   try {
