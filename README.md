@@ -112,6 +112,7 @@ Nextjs is best served on Vercel.
 * Remove auto sync database schema
 * Check the numbers to ensure they are correct
 * Fix server tests
+* Add links for non sol tokens
 
 
 # Examples/Demo

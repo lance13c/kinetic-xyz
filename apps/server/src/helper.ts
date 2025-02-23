@@ -4,6 +4,11 @@ import { z } from 'zod';
 // Schema for platform data (including Solana addresses)
 const platformSchema = z.object({
   solana: z.string().nullish(),
+  ethereum: z.string().nullish(),
+  pos: z.string().nullish(),
+  eos: z.string().nullish(),
+  tron: z.string().nullish(),
+  bsc: z.string().nullish(),
 }).catchall(z.unknown());
 
 // Schema for market data in coin details

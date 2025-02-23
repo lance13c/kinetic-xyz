@@ -182,9 +182,10 @@ export async function createServer(): Promise<FastifyInstance> {
 
                 const rawDetails = await detailResponse.json();
                 const validatedDetails = coinDetailsSchema.parse(rawDetails);
+                const platforms = validatedDetails.platforms;
 
                 return formatMarketCoin(coin, {
-                  tokenAddress: validatedDetails.platforms.solana || null
+                  tokenAddress: platforms.solana || null,
                 });
               } catch (error) {
                 console.error(`Error fetching details for ${coin.id}:`, error);

@@ -1,6 +1,6 @@
 'use client';
 
-import AnimateWatchlistItem from '@/components/AnimateWatchlistItem'; // our animation component
+import AnimateWatchlistItem from '@/components/AnimateWatchlistItem';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useAnimatePosition } from '@/context/AnimatePositionRef';
 import {
@@ -10,8 +10,9 @@ import {
   useToggleWatchlistMutation,
 } from '@kinetic/graphql';
 import { useQueryClient } from '@tanstack/react-query';
-import { Star } from 'lucide-react';
+import { ExternalLink, Star } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 
 const CoinTable = () => {
@@ -26,7 +27,7 @@ const CoinTable = () => {
     });
   const coins = marketData?.marketCoins;
 
-  const { data: watchlistData } = useGetWatchlistQuery({}, { enabled: isAuthenticated, subscribed: true, });
+  const { data: watchlistData } = useGetWatchlistQuery({}, { enabled: isAuthenticated, subscribed: true });
   const watchlist = watchlistData?.watchlist;
 
   // Ref dictionary for coin image elements keyed by coin id.
@@ -44,19 +45,14 @@ const CoinTable = () => {
       await queryClient.cancelQueries({ queryKey });
       const previousWatchlist = queryClient.getQueryData(queryKey);
       queryClient.setQueryData(queryKey, (old: any) => {
-        console.info("old", old);
         const currentWatchlist: CoinMarketData[] = old?.watchlist || [];
         const coinToAdd = coins?.find(c => c.id === coinId);
         if (currentWatchlist.find((c) => c.id === coinId)) {
-          // Remove coin if it's already in the watchlist
-          console.info("coinId", coinId);
           return {
             ...old,
             watchlist: currentWatchlist.filter((c: any) => c.id !== coinId)
           };
         } else if (coinToAdd) {
-          // Add coin if it's not in the watchlist
-          console.info("coinToAdd", coinToAdd);
           return {
             ...old,
             watchlist: [...currentWatchlist, coinToAdd]
@@ -82,16 +78,12 @@ const CoinTable = () => {
     setAnimatingCoin(null);
   };
 
-  // Handle click on the "Add to watchlist" button.
   const handleAddCoin = (coin: CoinMarketData) => {
-    console.info('coin', coin);
     const coinImageEl = coinImageRefs.current[coin.id];
     if (coinImageEl && !watchlist?.find((watchlistCoin) => watchlistCoin.id === coin.id)) {
-      console.log("did not find coin in watchlist", coin.id);
       const startRect = coinImageEl.getBoundingClientRect();
       setAnimatingCoin({ coin, startRect });
     } else {
-      console.info('toggleWatchlist', coin.id);
       toggleWatchlist({ coinId: coin.id });
     }
   };
@@ -124,7 +116,6 @@ const CoinTable = () => {
 
   return (
     <>
-      {/* Render the coin table */}
       <div className="overflow-x-auto max-h-[550px] overflow-y-auto relative">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800 font-[family-name:var(--font-geist-mono)] sticky top-0 z-10">
@@ -149,7 +140,7 @@ const CoinTable = () => {
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
             {coins?.map((coin) => (
-              <tr key={coin.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+              <tr key={coin.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800">
                 {isAuthenticated && (
                   <td className="px-2 py-4 whitespace-nowrap">
                     <button
@@ -178,8 +169,19 @@ const CoinTable = () => {
                     >
                       <Image src={coin.icon} alt={`${coin.symbol} icon`} width={24} height={24} className="rounded-full" />
                     </div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {coin.symbol.toUpperCase()}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {coin.symbol.toUpperCase()}
+                      </span>
+                      {coin.tokenAddress && <Link
+                        title='View on Solscan'
+                        href={`https://solscan.io/token/${coin.tokenAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-all duration-200"
+                      >
+                        <ExternalLink size={16} />
+                      </Link>}
                     </div>
                   </div>
                 </td>
