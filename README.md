@@ -103,7 +103,35 @@ Nextjs is best served on Vercel.
 
 ## Next Steps
 * Allow Searching for coins
-* Add pagination to the UI
+* Add pagination to the coin table
 * Optimize API calls to coingekco
 * Remove auto sync database schema
 * Check the numbers to ensure they are correct
+* Fix server tests
+
+
+
+# Examples/Demo
+
+# Examples/Demo
+
+Project screenshots and examples:
+
+## Screenshots
+
+### Logged Out View
+![Logged out state](assets/example_logged_out.png)
+
+### Login with Watchlist
+![Login view with watchlist](assets/example_login_with_watchlist.png)
+
+### Login without Watchlist
+![Login view without watchlist](assets/example_login_without_watchlist.png)
+
+
+### Mobile MarketPlace
+![Mobile MarketPlace](assets/example_mobile_marketplace.png)
+
+### Mobile Watchlist
+
+![Mobile MarketPlace](assets/example_mobile_watchlist.png)
